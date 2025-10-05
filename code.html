@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartSelf - Food Waste Reduction Platform</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: linear-gradient(135deg, #f0f8ff, #d0f0c0);
+        color: #333;
+    }
+    header {
+        background: linear-gradient(90deg, #2a7a2a, #3d8b3d);
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    nav {
+        display: flex;
+        justify-content: center;
+        background: rgba(45, 110, 45, 0.9);
+        gap: 20px;
+        padding: 12px;
+    }
+    nav a {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    nav a:hover {
+        color: #ffef9f;
+    }
+    .container {
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 20px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    h1, h2 { color: #2a7a2a; }
+    select, input, button {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 1em;
+    }
+    button {
+        background-color: #32cd32;
+        color: white;
+        cursor: pointer;
+        border: none;
+    }
+    button:hover { background-color: #228b22; }
+    ul { text-align: left; }
+    li.expired { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>SmartSelf</h1>
+</header>
+
+<nav>
+    <a href="#" onclick="showPage('home')">Home</a>
+    <a href="#" onclick="showPage('inventory')">Inventory</a>
+    <a href="#" onclick="showPage('recipes')">Recipes</a>
+    <a href="#" onclick="showPage('contact')">Contact Us</a>
+</nav>
+
+<div id="home" class="container">
+    <h2>Welcome to SmartSelf</h2>
+    <p>Manage your ingredients, reduce food waste, and find recipes with what you have at home!</p>
+</div>
+
+<div id="inventory" class="container" style="display:none;">
+    <h2>Smart Inventory</h2>
+    <label for="foodSelect">Choose an item:</label>
+    <select id="foodSelect">
+        <option value="">--Select an item--</option>
+        <optgroup label="Vegetables">
+            <option value="potato">Potato</option>
+            <option value="carrot">Carrot</option>
+            <option value="onion">Onion</option>
+            <option value="tomato">Tomato</option>
+            <option value="spinach">Spinach</option>
+            <option value="cucumber">Cucumber</option>
+            <option value="bell pepper">Bell Pepper</option>
+            <option value="garlic">Garlic</option>
+        </optgroup>
+        <optgroup label="Fruits">
+            <option value="banana">Banana</option>
+            <option value="apple">Apple</option>
+            <option value="orange">Orange</option>
+            <option value="mango">Mango</option>
+            <option value="grape">Grape</option>
+            <option value="strawberry">Strawberry</option>
+            <option value="blueberry">Blueberry</option>
+            <option value="pineapple">Pineapple</option>
+        </optgroup>
+    </select>
+    <label for="expiryDate">Expiry Date:</label>
+    <input type="date" id="expiryDate">
+    <button onclick="addInventoryItem()">Add to Inventory</button>
+    <ul id="inventoryList"></ul>
+</div>
+
+<div id="recipes" class="container" style="display:none;">
+    <h2>Recipe Finder</h2>
+    <p>Select an ingredient from your inventory to see related recipes:</p>
+    <select id="recipeSelect">
+        <option value="">--Select an item--</option>
+    </select>
+    <button onclick="getRecipes()">Get Recipes</button>
+    <ul id="recipeList"></ul>
+</div>
+
+<div id="contact" class="container" style="display:none;">
+    <h2>Contact Us</h2>
+    <form id="contactForm" onsubmit="return submitContactForm(event)">
+        <label>Name:</label><br><input type="text" id="name" required style="width:100%;"><br>
+        <label>Email:</label><br><input type="email" id="email" required style="width:100%;"><br>
+        <label>Message:</label><br><textarea id="message" required style="width:100%;"></textarea><br>
+        <button type="submit">Submit</button>
+    </form>
+    <p id="responseMsg" style="color:green;font-weight:bold;"></p>
+</div>
+
+<script>
+let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+
+const recipeMap = {
+    potato: ["Mashed Potato", "Potato Gratin"],
+    carrot: ["Carrot Stir Fry", "Carrot Soup"],
+    onion: ["Onion Soup", "Caramelized Onion Tart"],
+    tomato: ["Tomato Salad", "Tomato Pasta"],
+    spinach: ["Spinach Soup", "Spinach Quiche"],
+    cucumber: ["Cucumber Salad", "Tzatziki"],
+    "bell pepper": ["Stuffed Bell Peppers", "Pepper Stir Fry"],
+    garlic: ["Garlic Bread", "Garlic Chicken"],
+    banana: ["Banana Smoothie", "Banana Pancakes"],
+    apple: ["Apple Pie", "Apple Crumble"],
+    orange: ["Orange Juice", "Orange Salad"],
+    mango: ["Mango Shake", "Mango Salad"],
+    grape: ["Grape Juice", "Grape Salad"],
+    strawberry: ["Strawberry Shake", "Strawberry Tart"],
+    blueberry: ["Blueberry Muffins", "Blueberry Smoothie"],
+    pineapple: ["Pineapple Juice", "Pineapple Upside-down Cake"]
+};
+
+function showPage(pageId) {
+    ['home','inventory','recipes','contact'].forEach(id => document.getElementById(id).style.display='none');
+    document.getElementById(pageId).style.display='block';
+}
+
+function addInventoryItem() {
+    const foodSelect = document.getElementById("foodSelect");
+    const itemName = foodSelect.value;
+    const expiryDate = document.getElementById("expiryDate").value;
+    if(!itemName || !expiryDate){ alert("Select item and expiry date."); return; }
+    inventory.push({name:itemName,expiry:expiryDate});
+    localStorage.setItem("inventory",JSON.stringify(inventory));
+    displayInventory();
+    updateRecipeDropdown();
+}
+
+function displayInventory(){
+    const list = document.getElementById("inventoryList");
+    list.innerHTML="";
+    const today = new Date().toISOString().split("T")[0];
+    inventory.forEach(item=>{
+        const li=document.createElement("li");
+        li.textContent = `${item.name} - Expires on: ${item.expiry}`;
+        if(item.expiry<=today) li.className="expired";
+        list.appendChild(li);
+    });
+}
+
+function updateRecipeDropdown(){
+    const select = document.getElementById("recipeSelect");
+    select.innerHTML='<option value="">--Select an item--</option>';
+    inventory.forEach(item=>{
+        const opt = document.createElement("option");
+        opt.value=item.name;
+        opt.textContent=item.name.charAt(0).toUpperCase()+item.name.slice(1);
+        select.appendChild(opt);
+    });
+}
+
+function getRecipes(){
+    const selected = document.getElementById("recipeSelect").value;
+    const list = document.getElementById("recipeList");
+    list.innerHTML="";
+    if(selected && recipeMap[selected]){
+        recipeMap[selected].forEach(recipe=>{
+            const li=document.createElement("li");
+            li.textContent=recipe;
+            list.appendChild(li);
+        });
+    } else {
+        const li=document.createElement("li");
+        li.textContent="Please select an ingredient to see recipes.";
+        list.appendChild(li);
+    }
+}
+
+function submitContactForm(e){
+    e.preventDefault();
+    document.getElementById("responseMsg").textContent="Thank you! We will contact you soon.";
+    document.getElementById("contactForm").reset();
+    return false;
+}
+
+window.onload=function(){
+    displayInventory();
+    updateRecipeDropdown();
+};
+</script>
+
+</body>
+</html>
